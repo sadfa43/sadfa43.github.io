@@ -5,52 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sadfa's Blog</title>
     <style>
-        /* 全局重置与基础样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, -apple-system, sans-serif; background: #fafafa; color: #333; line-height: 1.6; }
         
         /* 导航栏 */
         nav { background: #FFD700; padding: 15px 30px; font-weight: bold; font-size: 18px; letter-spacing: 2px; }
         
-        /* 居中简介区 */
-        .intro { text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto; }
-        .intro h1 { font-size: 2rem; margin-bottom: 10px; }
-        .intro p { margin-bottom: 8px; color: #555; }
-        .intro a { color: #b8860b; text-decoration: none; }
-        .intro a:hover { text-decoration: underline; }
+        /* 简介区：左右布局 */
+        .intro { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 30px; 
+            padding: 60px 20px; 
+            max-width: 700px; 
+            margin: 0 auto; 
+        }
         
-        /*  */
+        /* 灰色小方块 */
+        .snake-box {
+            width: 100px; 
+            height: 100px; 
+            background: #e0e0e0; 
+            border-radius: 12px; 
+            flex-shrink: 0; 
+        }
+        
+        /* 文字区左对齐 */
+        .intro-text { text-align: left; }
+        .intro-text h1 { font-size: 2rem; margin-bottom: 10px; }
+        .intro-text p { margin-bottom: 8px; color: #555; }
+        .intro-text a { color: #b8860b; text-decoration: none; }
+        .intro-text a:hover { text-decoration: underline; }
+        
+        /* 博文区 */
         .posts { max-width: 700px; margin: 0 auto; padding: 0 20px 60px; }
         .post-card { background: #fff; padding: 25px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .post-card h2 { font-size: 1.4rem; margin-bottom: 10px; }
         .post-card time { font-size: 0.85rem; color: #999; display: block; margin-bottom: 10px; }
+
+        /* 手机端适配 */
+        @media (max-width: 600px) {
+            .intro { flex-direction: column; text-align: center; }
+            .intro-text { text-align: center; }
+        }
     </style>
 </head>
 <body>
-    <!-- 导航栏 -->
     <nav>sadfa</nav>
 
-    <!-- 个人简介 -->
     <section class="intro">
-        <h1>sadfa</h1>
-        <p>STR服务器服主 | 车迷</p>
-        <p>QQ: <a href="tencent://message/?uin=3991148172">3991148172</a></p>
-        <p>邮箱: <a href="mailto:sadfasadfa@yeah.net">sadfasadfa@yeah.net</a></p>
+        <!-- 左边：灰色小方块 + Canvas贪吃蛇 -->
+        <div class="snake-box">
+            <canvas id="snakeCanvas" width="100" height="100"></canvas>
+        </div>
+
+        <!-- 右边：个人简介 -->
+        <div class="intro-text">
+            <h1>sadfa</h1>
+            <p>STR服务器服主 | 车迷</p>
+            <p>QQ: <a href="tencent://message/?uin=3991148172">3991148172</a></p>
+            <p>邮箱: <a href="mailto:sadfasadfa@yeah.net">sadfasadfa@yeah.net</a></p>
+        </div>
     </section>
 
-    <!-- 列表 -->
     <section class="posts">
         <article class="post-card">
-            <time>2026-09-26</time>
+            <time>2026-09-27</time>
             <h2>我的博客</h2>
             <p>欢迎来到我的博客！</p>
         </article>
-        
-        <article class="post-card">
-            <time>2026-09-26</time>
-            <h2>114514</h2>
-            <p>114514</p>
-        </article>
     </section>
+
+    <script>
+        const canvas = document.getElementById('snakeCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 10; // 蛇身一格的大小
+        const cols = canvas.width / size;
+        const rows = canvas.height / size;
+
+        // 随机生成初始位置
+        let snake = [{ x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) }];
+        let dx = 1, dy = 0; 
+
+        // 随机改变方向的函数
+        function randomDirection() {
+            const dirs = [{x:1,y:0}, {x:-1,y:0}, {x:0,y:1}, {x:0,y:-1}];
+            // 过滤掉当前完全相反的方向，防止蛇倒退
+            const validDirs = dirs.filter(d => !(d.x === -dx && d.y === -dy));
+            const newDir = validDirs[Math.floor(Math.random() * validDirs.length)];
+            dx = newDir.x;
+            dy = newDir.y;
+        }
+
+        // 每 150 毫秒移动一次并随机转向
+        setInterval(() => {
+            randomDirection();
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // 撞墙检测：如果超出边界，就重置到随机位置
+            if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+                snake = [{ x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) }];
+            } else {
+                snake.unshift(head); // 头往前走
+                if (snake.length > 4) snake.pop(); // 保持蛇的长度为4节
+            }
+
+            // 绘制
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 遍历绘制每一节身体
+            snake.forEach((seg, i) => {
+                // 蛇头是红色，蛇身是绿色
+                ctx.fillStyle = i === 0 ? '#e74c3c' : '#2ecc71'; 
+                
+                ctx.beginPath();
+                // 使用 roundRect 画出圆润的方块
+                ctx.roundRect(seg.x * size + 1, seg.y * size + 1, size - 2, size - 2, 3);
+                ctx.fill();
+            });
+        }, 150);
+    </script>
 </body>
 </html>
